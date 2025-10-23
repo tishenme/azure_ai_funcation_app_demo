@@ -1,0 +1,17 @@
+# Azure Functions
+azure-functions
+azure-functions-worker
+
+# Azure SDK
+azure-ai-formrecognizer
+azure-identity
+
+# OpenAI
+openai
+
+# 数据处理
+pydantic>=2.0.0
+PyYAML
+
+# 工具
+requests

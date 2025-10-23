@@ -1,0 +1,7 @@
+openai_model: "gpt-4o-2025-08-06"
+azure_document_intelligence_api_version: "2024-02-29"
+
+# 核心 pipeline 组件版本
+document_classifier_version: "v1"
+ner_extractor_version: "v2"
+rule_engine: "rules_2025_q4_v1"

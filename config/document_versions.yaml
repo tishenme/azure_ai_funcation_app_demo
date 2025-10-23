@@ -1,0 +1,19 @@
+# 文档级版本控制：每类文档独立迭代
+claim_form:
+  version: "v2"
+  required: true
+invoice:
+  version: "v2"
+  required: true
+discharge:
+  version: "v1"
+  required: true
+receipt:
+  version: "v1"
+  required: false
+payment_proof:
+  version: "v1"
+  required: false
+id_card:
+  version: "v1"
+  required: true
