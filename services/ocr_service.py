@@ -5,7 +5,7 @@ from schemas.document_page import DocumentPage
 from schemas.ocr_output import OCROutput, DocumentMetadata
 from config.settings import get_document_version, is_document_required
 from document_processors.loader import load_document_processor
-import datetime
+from datetime import datetime
 
 class OCRService:
     """
@@ -109,5 +109,32 @@ class OCRService:
             claim_id=claim_id,
             ocr_version="1.0.0",
             document_versions=document_versions,
-            processing_timestamp=datetime.datetime.utcnow().isoformat() + "Z"
+            processing_timestamp=datetime.utcnow().isoformat() + "Z"
         )
+
+    def _aggregate_document_results(self, existing_result, new_result, document_type: str):
+        """
+        聚合同一类型多个文档的结果
+        
+        Args:
+            existing_result: 现有结果
+            new_result: 新结果
+            document_type: 文档类型
+            
+        Returns:
+            聚合后的结果
+        """
+        # 特定文档类型的聚合逻辑
+        if document_type in ["receipt", "invoice", "payment_proof"]:
+            # 对于这些类型，我们可以聚合金额等数值
+            if hasattr(existing_result, 'total_amount') and hasattr(new_result, 'total_amount'):
+                existing_result.total_amount += new_result.total_amount
+            
+            # 合并签名信息
+            if hasattr(existing_result, 'signatures') and hasattr(new_result, 'signatures'):
+                existing_result.signatures.extend(new_result.signatures)
+            
+            return existing_result
+        
+        # 对于其他类型，默认使用最新的结果
+        return new_result

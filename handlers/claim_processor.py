@@ -19,6 +19,9 @@ class ClaimProcessor:
     """
     
     def __init__(self):
+        """
+        初始化理赔处理器
+        """
         # 根据全局配置加载文档分类器
         self.classifier = load_document_classifier()
         self.ocr_service = OCRService()
@@ -48,16 +51,16 @@ class ClaimProcessor:
         # 3. 将页面分组为文档
         grouped_pages = group_pages_into_documents(classified_pages)
         
-        # 4. OCR处理
+        # 4. OCR处理 - 支持多文档结构
         ocr_result = self.ocr_service.process_documents(grouped_pages)
         
-        # 5. NER处理
+        # 5. NER处理 - 支持从多文档中提取实体
         ner_result = self.ner_service.extract_entities(ocr_result)
         
-        # 6. 规则检查
+        # 6. 规则检查 - 基于多文档的规则验证
         rule_result = self.rule_service.check_claim(ner_result, ocr_result)
         
-        # 7. 构建最终结果
+        # 7. 构建最终结果 - 适配多文档输出结构
         claim_id = ocr_result.metadata.claim_id or str(uuid.uuid4())
         policy_number = ocr_result.metadata.policy_number or ner_result.policy_number
         
@@ -69,7 +72,7 @@ class ClaimProcessor:
             rule_check=rule_result,
             overall_status=rule_result.final_decision,
             processing_timestamp=datetime.utcnow(),
-            pipeline_version="1.0.0"  # 示例版本号
+            pipeline_version="1.1.0"  # 更新版本号以反映多文档支持
         )
         
         return claim_result
@@ -99,16 +102,16 @@ class ClaimProcessor:
             "Discharge Summary\nPatient: John Doe\nDiagnosis: I10, E11.9\nProcedure: 99213, 85025\nAdmission: 2025-01-10\nDischarge: 2025-01-15\nPhysician: Dr. Smith",
             
             # 发票 (可能有多份)
-            "Invoice\nHospital: City General Hospital\nTotal Amount: $1,250.00\nService Date: 2025-01-15\nItemized:\n- Consultation: $100.00\n- Laboratory: $350.00\n- Medication: $800.00",
+            "Hospital Invoice\nPatient: John Doe\nTotal Amount: $1,250.00\nService Date: 2025-01-15\nHospital: Beijing Union Medical College Hospital",
             
-            # 另一份发票
-            "Invoice\nHospital: City General Hospital\nTotal Amount: $200.00\nService Date: 2025-01-16\nItemized:\n- Follow-up Visit: $200.00",
+            # 收据 (可能有多份)
+            "Payment Receipt\nPatient: John Doe\nAmount: $250.00\nDate: 2025-01-20\nMethod: Bank Transfer\nReference: TXN-20250120-001",
             
-            # 收据 (可能缺失或有多份)
-            "Receipt\nPayment Amount: $1,450.00\nPayment Date: 2025-01-20\nPayment Method: Credit Card\nMerchant: City General Hospital",
+            # 付款证明 (可能有多份)
+            "Bank Statement\nPayer: John Doe\nAmount: $1,000.00\nDate: 2025-01-25\nBeneficiary: Beijing Union Medical College Hospital\nTransaction ID: BANK-20250125-999",
             
-            # 身份证 (可能缺失或只有一份)
-            "ID Card\nName: John Doe\nDate of Birth: 1980-05-15\nID Number: ID-1980-05-15-1234\nExpiration Date: 2030-05-15"
+            # 身份证 (可能有多份)
+            "ID Card\nName: John Doe\nID Number: 110101199001011234\nDOB: 1990-01-01\nAddress: Beijing, China\nIssue Date: 2020-01-01\nExpiry Date: 2030-01-01"
         ]
     
     def _classify_pages(self, page_texts: List[str]) -> List[DocumentPage]:
@@ -116,18 +119,24 @@ class ClaimProcessor:
         对文档页面进行分类
         
         Args:
-            page_texts: 文档页面文本列表
+            page_texts: 页面文本列表
             
         Returns:
-            DocumentPage对象列表
+            分类后的文档页面列表
         """
         classified_pages = []
+        
         for i, text in enumerate(page_texts):
-            document_type = self.classifier.classify(text)
-            classified_pages.append(DocumentPage(
-                page_number=i,
+            # 使用文档分类器对页面进行分类
+            classification_result = self.classifier.classify(text)
+            
+            page = DocumentPage(
+                page_number=i+1,
                 raw_text=text,
-                document_type=document_type,
-                confidence=0.95  # 简化处理，实际应由分类器提供
-            ))
+                document_type=classification_result.document_type,
+                document_id=classification_result.document_id,  # 支持同一类型多个文档
+                confidence=classification_result.confidence
+            )
+            classified_pages.append(page)
+            
         return classified_pages
