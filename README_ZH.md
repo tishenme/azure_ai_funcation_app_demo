@@ -12,6 +12,7 @@
 - [配置](#配置)
 - [服务](#服务)
 - [Azure工具](#azure工具)
+- [签名检测](#签名检测)
 - [日志记录](#日志记录)
 - [开发](#开发)
 - [测试](#测试)
@@ -105,6 +106,7 @@ claims-ai-processor/
 │   ├── azure_document_intelligence.py # Azure文档智能客户端
 │   ├── openai_client.py             # Azure OpenAI客户端
 │   ├── blob_storage.py              # Azure Blob存储客户端
+│   ├── signature_detector.py        # 签名检测和处理
 │   └── log_manager.py               # 日志管理器（集成Application Insights）
 │
 ├── schemas/                         # 数据模型和验证
@@ -240,6 +242,17 @@ Azure OpenAI服务的封装：
 - 生成SAS URL以安全访问私有blob
 
 `generate_sas_url`方法允许在不公开blob的情况下安全访问它们。当需要将blob URL传递给Azure OpenAI进行图像分析时，这特别有用，因为它在提供临时访问权限的同时保持了安全性。
+
+## 签名检测
+
+系统包含检测和提取文档签名的功能：
+
+- 使用Azure文档智能在文档中定位签名区域
+- 提取签名图像并将其保存到Azure Blob存储
+- 生成SAS URL以安全访问签名图像
+- 在每种文档类型的OCR输出中包含签名URL
+
+此功能在[SignatureDetector](utils/signature_detector.py)类中实现，并集成到文档处理流水线中。
 
 ## 日志记录
 

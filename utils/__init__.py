@@ -6,11 +6,13 @@ from .azure_document_intelligence import AzureDocumentIntelligenceClient
 from .openai_client import AzureOpenAIClient
 from .blob_storage import AzureBlobStorageClient
 from .log_manager import LogManager
+from .signature_detector import SignatureDetector
 
 __all__ = [
     "load_document_classifier",
     "AzureDocumentIntelligenceClient",
     "AzureOpenAIClient",
     "AzureBlobStorageClient",
-    "LogManager"
+    "LogManager",
+    "SignatureDetector"
 ]

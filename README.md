@@ -12,6 +12,7 @@ An intelligent document processing system that transforms unstructured insurance
 - [Configuration](#configuration)
 - [Services](#services)
 - [Azure Tools](#azure-tools)
+- [Signature Detection](#signature-detection)
 - [Logging](#logging)
 - [Development](#development)
 - [Testing](#testing)
@@ -105,6 +106,7 @@ claims-ai-processor/
 │   ├── azure_document_intelligence.py # Azure Document Intelligence client
 │   ├── openai_client.py             # Azure OpenAI client
 │   ├── blob_storage.py              # Azure Blob Storage client
+│   ├── signature_detector.py        # Signature detection and processing
 │   └── log_manager.py               # Logging manager with Application Insights
 │
 ├── schemas/                         # Data models and validation
@@ -240,6 +242,17 @@ Utility for working with Azure Blob Storage:
 - Generate SAS URLs for secure access to private blobs
 
 The `generate_sas_url` method allows secure access to blobs without making them publicly accessible. This is especially useful when passing blob URLs to Azure OpenAI for image analysis, as it maintains security while providing temporary access.
+
+## Signature Detection
+
+The system includes functionality to detect and extract signatures from documents:
+
+- Uses Azure Document Intelligence to locate signature areas in documents
+- Extracts signature images and saves them to Azure Blob Storage
+- Generates SAS URLs for secure access to signature images
+- Includes signature URLs in the OCR output for each document type
+
+This functionality is implemented in the [SignatureDetector](utils/signature_detector.py) class and integrated into the document processing pipeline.
 
 ## Logging
 

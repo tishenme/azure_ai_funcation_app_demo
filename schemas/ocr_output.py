@@ -1,70 +1,121 @@
+"""
+OCR输出数据模型
+定义从文档中提取的结构化数据
+"""
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import List, Optional
+from datetime import date
+from enum import Enum
+
+class DocumentMetadata(BaseModel):
+    """
+    文档元数据
+    """
+    claim_id: Optional[str] = None
+    policy_number: Optional[str] = None
+    ocr_version: str
+    document_versions: dict
+    processing_timestamp: str
+
+class SignatureType(str, Enum):
+    """
+    签名类型枚举
+    """
+    PATIENT = "patient"           # 患者签名
+    PROVIDER = "provider"         # 医疗提供者签名
+    INSURED = "insured"           # 被保险人签名
+    AUTHORIZED = "authorized"     # 授权代表签名
+    WITNESS = "witness"           # 见证人签名
+    UNKNOWN = "unknown"           # 未知类型签名
+
+class SignatureInfo(BaseModel):
+    """
+    签名信息模型
+    """
+    url: str                      # 签名图像URL
+    signature_type: SignatureType # 签名类型
+    confidence: Optional[float]   # 签名检测置信度
 
 class ClaimFormOCR(BaseModel):
-    policy_number: Optional[str] = None
-    patient_name: Optional[str] = None
-    claim_amount: Optional[float] = None
-    date_of_service: Optional[str] = None
-    diagnosis_codes: List[str] = []
-    provider_name: Optional[str] = None
-    provider_npi: Optional[str] = None
-    claim_submission_date: Optional[str] = None
+    """
+    理赔表OCR提取结果
+    """
+    policy_number: str
+    patient_name: str
+    claim_amount: float
+    claim_date: date
+    diagnosis_codes: List[str]
+    signatures: List[SignatureInfo] = []  # 签名信息列表
 
 class DischargeOCR(BaseModel):
-    patient_name: Optional[str] = None
-    diagnosis_codes: List[str] = []
-    procedure_codes: List[str] = []
-    admission_date: Optional[str] = None
-    discharge_date: Optional[str] = None
-    attending_physician: Optional[str] = None
-    hospital_name: Optional[str] = None
-    discharge_condition: Optional[str] = None
+    """
+    出院小结OCR提取结果
+    """
+    patient_name: str
+    diagnosis_codes: List[str]
+    procedure_codes: List[str]
+    admission_date: date
+    discharge_date: date
+    attending_physician: str
+    hospital_name: str
+    discharge_condition: str
+    signatures: List[SignatureInfo] = []  # 签名信息列表
 
 class InvoiceOCR(BaseModel):
-    total_amount: Optional[float] = None
-    hospital_name: Optional[str] = None
-    service_date: Optional[str] = None
-    itemized_services: List[dict] = []
-    patient_account_number: Optional[str] = None
+    """
+    发票OCR提取结果
+    """
+    total_amount: float
+    service_date: date
+    hospital_name: str
+    itemized_charges: List[dict]
+    signatures: List[SignatureInfo] = []  # 签名信息列表
 
 class ReceiptOCR(BaseModel):
-    payment_amount: Optional[float] = None
-    payment_date: Optional[str] = None
-    payment_method: Optional[str] = None
-    merchant_name: Optional[str] = None
-    transaction_reference: Optional[str] = None
-    patient_name: Optional[str] = None
+    """
+    收据OCR提取结果
+    """
+    payment_amount: float
+    payment_date: date
+    payment_method: str
+    merchant_name: str
+    transaction_reference: str
+    patient_name: str
+    signatures: List[SignatureInfo] = []  # 签名信息列表
 
 class PaymentProofOCR(BaseModel):
-    payer_name: Optional[str] = None
-    payee_name: Optional[str] = None
-    payment_amount: Optional[float] = None
-    payment_date: Optional[str] = None
-    bank_name: Optional[str] = None
-    account_number_last4: Optional[str] = None
-    transaction_id: Optional[str] = None
-    payment_purpose: Optional[str] = None
+    """
+    付款证明OCR提取结果
+    """
+    payer_name: str
+    payment_amount: float
+    payment_date: date
+    payment_method: str
+    beneficiary_name: str
+    transaction_id: str
+    signatures: List[SignatureInfo] = []  # 签名信息列表
 
 class IDCardOCR(BaseModel):
-    patient_name: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    id_number: Optional[str] = None
-    expiration_date: Optional[str] = None
-    issuing_authority: Optional[str] = None
-    address: Optional[str] = None
-
-class OCRMetadata(BaseModel):
-    policy_number: Optional[str] = None
-    claim_id: Optional[str] = None
-    ocr_version: Optional[str] = None
-    document_versions: dict = {}
+    """
+    身份证OCR提取结果
+    """
+    name: str
+    id_number: str
+    date_of_birth: date
+    address: str
+    issue_date: date
+    expiry_date: date
+    signatures: List[SignatureInfo] = []  # 签名信息列表
 
 class OCROutput(BaseModel):
+    """
+    OCR处理结果
+    包含所有文档类型的提取结果
+    """
     claim_form: Optional[ClaimFormOCR] = None
-    discharge: Optional[List[DischargeOCR]] = None
-    invoice: Optional[List[InvoiceOCR]] = None
-    receipt: Optional[List[ReceiptOCR]] = None
-    payment_proof: Optional[List[PaymentProofOCR]] = None
-    id_card: Optional[List[IDCardOCR]] = None
-    metadata: OCRMetadata
+    discharge: Optional[DischargeOCR] = None
+    invoice: Optional[InvoiceOCR] = None
+    receipt: Optional[ReceiptOCR] = None
+    payment_proof: Optional[PaymentProofOCR] = None
+    id_card: Optional[IDCardOCR] = None
+    metadata: DocumentMetadata

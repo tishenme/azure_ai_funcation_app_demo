@@ -6,7 +6,7 @@ import os
 from typing import List, Optional, IO, Any
 from azure.storage.blob import BlobServiceClient, ContainerClient, BlobClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
-from azure.storage.blob import generate_blob_sas, BlobSasPermissions
+from azure.storage.blob import ContentSettings
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -125,7 +125,8 @@ class AzureBlobStorageClient:
         with open(file_path, "rb") as f:
             blob_client.upload_blob(f, overwrite=True)
     
-    def upload_blob_from_bytes(self, container_name: str, blob_name: str, data: bytes) -> None:
+    def upload_blob_from_bytes(self, container_name: str, blob_name: str, data: bytes, 
+                              content_type: Optional[str] = None) -> None:
         """
         从字节数据上传Blob
         
@@ -133,9 +134,16 @@ class AzureBlobStorageClient:
             container_name: 容器名称
             blob_name: Blob名称
             data: 字节数据
+            content_type: 内容类型（可选）
         """
         blob_client = self.get_blob_client(container_name, blob_name)
-        blob_client.upload_blob(data, overwrite=True)
+        
+        # 设置内容类型
+        blob_content_settings = None
+        if content_type:
+            blob_content_settings = ContentSettings(content_type=content_type)
+        
+        blob_client.upload_blob(data, overwrite=True, content_settings=blob_content_settings)
     
     def blob_exists(self, container_name: str, blob_name: str) -> bool:
         """
