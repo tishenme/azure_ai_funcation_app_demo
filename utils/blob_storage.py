@@ -7,6 +7,7 @@ from typing import List, Optional, IO, Any
 from azure.storage.blob import BlobServiceClient, ContainerClient, BlobClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 from azure.storage.blob import ContentSettings
+from azure.identity import DefaultAzureCredential
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -14,6 +15,7 @@ class AzureBlobStorageClient:
     """
     Azure Blob Storage客户端
     提供与Azure Blob Storage服务的交互功能
+    支持连接字符串和托管身份验证
     """
     
     def __init__(self, connection_string: Optional[str] = None):
@@ -21,20 +23,34 @@ class AzureBlobStorageClient:
         初始化Azure Blob Storage客户端
         
         Args:
-            connection_string: 连接字符串，如果为None则从环境变量获取
+            connection_string: 连接字符串，如果为None则尝试使用托管身份
         """
-        if connection_string is None:
-            connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        # 尝试使用托管身份
+        if os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() == "true":
+            account_url = os.getenv("AZURE_STORAGE_ACCOUNT_URL")
+            if not account_url:
+                raise ValueError(
+                    "Missing Azure Storage account URL. "
+                    "Please set AZURE_STORAGE_ACCOUNT_URL environment variable "
+                    "when using managed identity."
+                )
             
-        if not connection_string:
-            raise ValueError(
-                "Missing Azure Storage connection string. "
-                "Please set AZURE_STORAGE_CONNECTION_STRING environment variable "
-                "or provide connection_string parameter."
-            )
-        
-        self.connection_string = connection_string
-        self.blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            credential = DefaultAzureCredential()
+            self.blob_service_client = BlobServiceClient(account_url=account_url, credential=credential)
+        else:
+            # 使用连接字符串
+            if connection_string is None:
+                connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+                
+            if not connection_string:
+                raise ValueError(
+                    "Missing Azure Storage connection string. "
+                    "Please set AZURE_STORAGE_CONNECTION_STRING environment variable "
+                    "or use managed identity by setting AZURE_USE_MANAGED_IDENTITY=true "
+                    "and providing AZURE_STORAGE_ACCOUNT_URL."
+                )
+            
+            self.blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     
     def get_container_client(self, container_name: str) -> ContainerClient:
         """
@@ -192,6 +208,12 @@ class AzureBlobStorageClient:
         Returns:
             带SAS令牌的Blob URL
         """
+        # 如果使用托管身份，则无法生成SAS令牌
+        if os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() == "true":
+            # 在托管身份模式下，返回普通URL
+            # 注意：这要求容器具有适当的访问权限
+            return self.get_blob_url(container_name, blob_name)
+        
         if permissions is None:
             permissions = BlobSasPermissions(read=True)
         
@@ -199,21 +221,20 @@ class AzureBlobStorageClient:
         account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
         account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
         
+        # 尝试从连接字符串中提取账户信息
         if not account_name or not account_key:
-            # 从连接字符串中提取账户信息
-            try:
-                parts = dict(part.split('=', 1) for part in self.connection_string.split(';') if '=' in part)
-                account_name = parts.get('AccountName')
-                account_key = parts.get('AccountKey')
-            except Exception:
-                raise ValueError(
-                    "Unable to extract account information from connection string. "
-                    "Please set AZURE_STORAGE_ACCOUNT_NAME and AZURE_STORAGE_ACCOUNT_KEY environment variables."
-                )
+            connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+            if connection_string:
+                try:
+                    parts = dict(part.split('=', 1) for part in connection_string.split(';') if '=' in part)
+                    account_name = parts.get('AccountName')
+                    account_key = parts.get('AccountKey')
+                except Exception:
+                    pass
         
         if not account_name or not account_key:
             raise ValueError(
-                "Missing Azure Storage account credentials. "
+                "Missing Azure Storage account credentials required for SAS token generation. "
                 "Please set AZURE_STORAGE_ACCOUNT_NAME and AZURE_STORAGE_ACCOUNT_KEY environment variables."
             )
         

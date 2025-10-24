@@ -13,6 +13,7 @@ An intelligent document processing system that transforms unstructured insurance
 - [Services](#services)
 - [Azure Tools](#azure-tools)
 - [Signature Detection](#signature-detection)
+- [Authentication](#authentication)
 - [Logging](#logging)
 - [Development](#development)
 - [Testing](#testing)
@@ -254,6 +255,32 @@ The system includes functionality to detect and extract signatures from document
 
 This functionality is implemented in the [SignatureDetector](utils/signature_detector.py) class and integrated into the document processing pipeline.
 
+## Authentication
+
+The system supports both API key and managed identity authentication for Azure services:
+
+### API Key Authentication (Development)
+
+For local development, you can use API key authentication by setting the following environment variables:
+
+- `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`
+- `AZURE_DOCUMENT_INTELLIGENCE_KEY`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_KEY`
+- `AZURE_STORAGE_CONNECTION_STRING`
+
+### Managed Identity Authentication (Production)
+
+For production deployments on Azure (such as Azure Functions), it's recommended to use managed identities for enhanced security:
+
+1. Set `AZURE_USE_MANAGED_IDENTITY=true`
+2. For Azure Storage, also set `AZURE_STORAGE_ACCOUNT_URL`
+3. Ensure your Azure Function has the appropriate role assignments:
+   - `Cognitive Services User` role for Azure Document Intelligence and Azure OpenAI
+   - `Storage Blob Data Contributor` role for Azure Storage
+
+When using managed identity, the system will automatically use the Function App's managed identity to authenticate with Azure services, eliminating the need to manage and store API keys.
+
 ## Logging
 
 The system uses [LogManager](utils/log_manager.py) for centralized logging with Azure Application Insights integration:
@@ -281,12 +308,12 @@ To set up the development environment:
 
 3. Configure environment variables for Azure services:
    - `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`
-   - `AZURE_DOCUMENT_INTELLIGENCE_KEY`
+   - `AZURE_DOCUMENT_INTELLIGENCE_KEY` (or use managed identity)
    - `AZURE_OPENAI_ENDPOINT`
-   - `AZURE_OPENAI_KEY`
-   - `AZURE_STORAGE_CONNECTION_STRING`
-   - `AZURE_STORAGE_ACCOUNT_NAME`
-   - `AZURE_STORAGE_ACCOUNT_KEY`
+   - `AZURE_OPENAI_KEY` (or use managed identity)
+   - `AZURE_STORAGE_CONNECTION_STRING` (or use managed identity with `AZURE_STORAGE_ACCOUNT_URL`)
+   - `AZURE_STORAGE_ACCOUNT_NAME` (required for SAS token generation)
+   - `AZURE_STORAGE_ACCOUNT_KEY` (required for SAS token generation)
    - `APPLICATIONINSIGHTS_CONNECTION_STRING`
    - `DATABASE_CONNECTION_STRING`
 

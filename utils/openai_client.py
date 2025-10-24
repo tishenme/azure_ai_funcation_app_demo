@@ -5,36 +5,55 @@ Azure OpenAI工具类
 import os
 from typing import Dict, Any, List, Optional
 import openai
+from azure.identity import DefaultAzureCredential
 from config.settings import OPENAI_MODEL
 
 class AzureOpenAIClient:
     """
     Azure OpenAI客户端
     提供与Azure OpenAI服务的交互功能
+    支持API密钥和托管身份验证
     """
     
     def __init__(self):
         """
         初始化Azure OpenAI客户端
-        从环境变量获取认证信息
+        支持使用API密钥或托管身份进行身份验证
         """
         endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        key = os.getenv("AZURE_OPENAI_KEY")
-        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-29")
         
-        if not endpoint or not key:
+        if not endpoint:
             raise ValueError(
-                "Missing Azure OpenAI credentials. "
-                "Please set AZURE_OPENAI_ENDPOINT and "
-                "AZURE_OPENAI_KEY environment variables."
+                "Missing Azure OpenAI endpoint. "
+                "Please set AZURE_OPENAI_ENDPOINT environment variable."
             )
         
         # 配置Azure OpenAI客户端
-        self.client = openai.AzureOpenAI(
-            azure_endpoint=endpoint,
-            api_key=key,
-            api_version=api_version
-        )
+        if os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() == "true":
+            # 使用托管身份
+            credential = DefaultAzureCredential()
+            token = credential.get_token("https://cognitiveservices.azure.com/.default")
+            
+            self.client = openai.AzureOpenAI(
+                azure_endpoint=endpoint,
+                azure_ad_token=token.token,
+                api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-29")
+            )
+        else:
+            # 使用API密钥
+            key = os.getenv("AZURE_OPENAI_KEY")
+            if not key:
+                raise ValueError(
+                    "Missing Azure OpenAI credentials. "
+                    "Please set AZURE_OPENAI_KEY environment variable "
+                    "or use managed identity by setting AZURE_USE_MANAGED_IDENTITY=true."
+                )
+            
+            self.client = openai.AzureOpenAI(
+                azure_endpoint=endpoint,
+                api_key=key,
+                api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-29")
+            )
         
         # 默认部署名称（模型）
         self.default_deployment = OPENAI_MODEL

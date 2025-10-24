@@ -38,11 +38,21 @@ class LogManager:
             # 获取Application Insights连接字符串
             self.connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
             
+            # 如果没有提供连接字符串，检查是否使用托管身份
             if not self.connection_string:
-                raise ValueError(
-                    "Missing Application Insights connection string. "
-                    "Please set APPLICATIONINSIGHTS_CONNECTION_STRING environment variable."
-                )
+                if os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() == "true":
+                    # 在托管身份模式下，可能需要其他配置方式
+                    # 当前实现中我们仍然需要连接字符串
+                    raise ValueError(
+                        "Missing Application Insights connection string. "
+                        "Please set APPLICATIONINSIGHTS_CONNECTION_STRING environment variable. "
+                        "Managed identity support for Application Insights requires additional configuration."
+                    )
+                else:
+                    raise ValueError(
+                        "Missing Application Insights connection string. "
+                        "Please set APPLICATIONINSIGHTS_CONNECTION_STRING environment variable."
+                    )
             
             # 初始化日志记录器
             self.logger = logging.getLogger("claims_ai_processor")

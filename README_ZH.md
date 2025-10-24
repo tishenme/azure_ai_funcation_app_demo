@@ -13,6 +13,7 @@
 - [服务](#服务)
 - [Azure工具](#azure工具)
 - [签名检测](#签名检测)
+- [身份验证](#身份验证)
 - [日志记录](#日志记录)
 - [开发](#开发)
 - [测试](#测试)
@@ -254,6 +255,32 @@ Azure OpenAI服务的封装：
 
 此功能在[SignatureDetector](utils/signature_detector.py)类中实现，并集成到文档处理流水线中。
 
+## 身份验证
+
+系统支持API密钥和托管身份两种Azure服务身份验证方式：
+
+### API密钥身份验证（开发环境）
+
+在本地开发时，可以使用API密钥身份验证，设置以下环境变量：
+
+- `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`
+- `AZURE_DOCUMENT_INTELLIGENCE_KEY`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_KEY`
+- `AZURE_STORAGE_CONNECTION_STRING`
+
+### 托管身份验证（生产环境）
+
+在Azure上进行生产部署（如Azure Functions）时，建议使用托管身份以增强安全性：
+
+1. 设置`AZURE_USE_MANAGED_IDENTITY=true`
+2. 对于Azure Storage，还需设置`AZURE_STORAGE_ACCOUNT_URL`
+3. 确保您的Azure Function具有适当的角色分配：
+   - `Cognitive Services User`角色用于Azure文档智能和Azure OpenAI
+   - `Storage Blob Data Contributor`角色用于Azure Storage
+
+使用托管身份时，系统将自动使用Function App的托管身份向Azure服务进行身份验证，无需管理和存储API密钥。
+
 ## 日志记录
 
 系统使用[LogManager](utils/log_manager.py)进行集中日志记录，并与Azure Application Insights集成：
@@ -281,12 +308,12 @@ LogManager提供单例实例，确保应用程序中的日志记录一致性，�
 
 3. 为Azure服务配置环境变量：
    - `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`
-   - `AZURE_DOCUMENT_INTELLIGENCE_KEY`
+   - `AZURE_DOCUMENT_INTELLIGENCE_KEY`（或使用托管身份）
    - `AZURE_OPENAI_ENDPOINT`
-   - `AZURE_OPENAI_KEY`
-   - `AZURE_STORAGE_CONNECTION_STRING`
-   - `AZURE_STORAGE_ACCOUNT_NAME`
-   - `AZURE_STORAGE_ACCOUNT_KEY`
+   - `AZURE_OPENAI_KEY`（或使用托管身份）
+   - `AZURE_STORAGE_CONNECTION_STRING`（或使用带有`AZURE_STORAGE_ACCOUNT_URL`的托管身份）
+   - `AZURE_STORAGE_ACCOUNT_NAME`（生成SAS令牌所需）
+   - `AZURE_STORAGE_ACCOUNT_KEY`（生成SAS令牌所需）
    - `APPLICATIONINSIGHTS_CONNECTION_STRING`
    - `DATABASE_CONNECTION_STRING`
 

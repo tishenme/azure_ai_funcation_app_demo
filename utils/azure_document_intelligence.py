@@ -4,7 +4,8 @@ Azure Document Intelligence工具类
 """
 import os
 from typing import List, Dict, Any
-from azure.core.credentials import AzureKeyCredential
+from azure.core.credentials import AzureKeyCredential, TokenCredential
+from azure.identity import DefaultAzureCredential
 from azure.ai.formrecognizer import DocumentAnalysisClient
 from config.settings import ADI_API_VERSION
 
@@ -12,26 +13,40 @@ class AzureDocumentIntelligenceClient:
     """
     Azure Document Intelligence客户端
     提供文档分析功能，包括OCR和关键信息提取
+    支持API密钥和托管身份验证
     """
     
     def __init__(self):
         """
         初始化Azure Document Intelligence客户端
-        从环境变量获取认证信息
+        支持使用API密钥或托管身份进行身份验证
         """
         endpoint = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
-        key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
         
-        if not endpoint or not key:
+        if not endpoint:
             raise ValueError(
-                "Missing Azure Document Intelligence credentials. "
-                "Please set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT and "
-                "AZURE_DOCUMENT_INTELLIGENCE_KEY environment variables."
+                "Missing Azure Document Intelligence endpoint. "
+                "Please set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT environment variable."
             )
+        
+        # 尝试使用托管身份
+        if os.getenv("AZURE_USE_MANAGED_IDENTITY", "false").lower() == "true":
+            # 使用托管身份
+            credential = DefaultAzureCredential()
+        else:
+            # 使用API密钥
+            key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
+            if not key:
+                raise ValueError(
+                    "Missing Azure Document Intelligence credentials. "
+                    "Please set AZURE_DOCUMENT_INTELLIGENCE_KEY environment variable "
+                    "or use managed identity by setting AZURE_USE_MANAGED_IDENTITY=true."
+                )
+            credential = AzureKeyCredential(key)
         
         self.client = DocumentAnalysisClient(
             endpoint=endpoint,
-            credential=AzureKeyCredential(key),
+            credential=credential,
             api_version=ADI_API_VERSION
         )
     
