@@ -3,7 +3,7 @@ OCR输出数据模型
 定义从文档中提取的结构化数据
 """
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import date
 from enum import Enum
 
@@ -38,7 +38,7 @@ class SignatureInfo(BaseModel):
 
 class ClaimFormOCR(BaseModel):
     """
-    理赔表OCR提取结果
+    理赔表OCR提取结果（只有一份）
     """
     policy_number: str
     patient_name: str
@@ -49,7 +49,7 @@ class ClaimFormOCR(BaseModel):
 
 class DischargeOCR(BaseModel):
     """
-    出院小结OCR提取结果
+    出院小结OCR提取结果（可能有多份）
     """
     patient_name: str
     diagnosis_codes: List[str]
@@ -63,7 +63,7 @@ class DischargeOCR(BaseModel):
 
 class InvoiceOCR(BaseModel):
     """
-    发票OCR提取结果
+    发票OCR提取结果（可能有多份）
     """
     total_amount: float
     service_date: date
@@ -73,7 +73,7 @@ class InvoiceOCR(BaseModel):
 
 class ReceiptOCR(BaseModel):
     """
-    收据OCR提取结果
+    收据OCR提取结果（可能有多份）
     """
     payment_amount: float
     payment_date: date
@@ -85,7 +85,7 @@ class ReceiptOCR(BaseModel):
 
 class PaymentProofOCR(BaseModel):
     """
-    付款证明OCR提取结果
+    付款证明OCR提取结果（可能有多份）
     """
     payer_name: str
     payment_amount: float
@@ -97,7 +97,7 @@ class PaymentProofOCR(BaseModel):
 
 class IDCardOCR(BaseModel):
     """
-    身份证OCR提取结果
+    身份证OCR提取结果（可能有多份）
     """
     name: str
     id_number: str
@@ -110,12 +110,12 @@ class IDCardOCR(BaseModel):
 class OCROutput(BaseModel):
     """
     OCR处理结果
-    包含所有文档类型的提取结果
+    包含所有文档类型的提取结果，支持同一类型多个文档
     """
-    claim_form: Optional[ClaimFormOCR] = None
-    discharge: Optional[DischargeOCR] = None
-    invoice: Optional[InvoiceOCR] = None
-    receipt: Optional[ReceiptOCR] = None
-    payment_proof: Optional[PaymentProofOCR] = None
-    id_card: Optional[IDCardOCR] = None
+    claim_form: ClaimFormOCR  # 理赔表（只有一份）
+    discharge: List[DischargeOCR] = []  # 出院小结（可能有多份）
+    invoice: List[InvoiceOCR] = []  # 发票（可能有多份）
+    receipt: List[ReceiptOCR] = []  # 收据（可能有多份）
+    payment_proof: List[PaymentProofOCR] = []  # 付款证明（可能有多份）
+    id_card: List[IDCardOCR] = []  # 身份证（可能有多份）
     metadata: DocumentMetadata

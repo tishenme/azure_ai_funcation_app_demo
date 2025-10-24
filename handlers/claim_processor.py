@@ -1,14 +1,23 @@
+"""
+理赔处理器
+负责端到端的理赔处理流程
+"""
 from typing import List
+import uuid
+from datetime import datetime
 from schemas.document_page import DocumentPage
 from schemas.claim_result import ClaimResult
-from utils.document_classifier_loader import load_document_classifier
+from utils.document_classifier_loader import load_document_classifier, group_pages_into_documents
 from services.ocr_service import OCRService
 from services.ner_service import NERService
 from services.rule_service import RuleService
-from datetime import datetime
-import uuid
 
 class ClaimProcessor:
+    """
+    理赔处理器类
+    协调整个理赔处理流程
+    """
+    
     def __init__(self):
         # 根据全局配置加载文档分类器
         self.classifier = load_document_classifier()
@@ -36,16 +45,19 @@ class ClaimProcessor:
         # 2. 对文档页面进行分类
         classified_pages = self._classify_pages(page_texts)
         
-        # 3. OCR处理 - 支持多文档结构
-        ocr_result = self.ocr_service.process_documents(classified_pages)
+        # 3. 将页面分组为文档
+        grouped_pages = group_pages_into_documents(classified_pages)
         
-        # 4. NER处理 - 支持从多文档中提取实体
+        # 4. OCR处理
+        ocr_result = self.ocr_service.process_documents(grouped_pages)
+        
+        # 5. NER处理
         ner_result = self.ner_service.extract_entities(ocr_result)
         
-        # 5. 规则检查 - 基于多文档的规则验证
+        # 6. 规则检查
         rule_result = self.rule_service.check_claim(ner_result, ocr_result)
         
-        # 6. 构建最终结果 - 适配多文档输出结构
+        # 7. 构建最终结果
         claim_id = ocr_result.metadata.claim_id or str(uuid.uuid4())
         policy_number = ocr_result.metadata.policy_number or ner_result.policy_number
         
@@ -57,7 +69,7 @@ class ClaimProcessor:
             rule_check=rule_result,
             overall_status=rule_result.final_decision,
             processing_timestamp=datetime.utcnow(),
-            pipeline_version="1.1.0"  # 更新版本号以反映多文档支持
+            pipeline_version="1.0.0"  # 示例版本号
         )
         
         return claim_result
