@@ -11,6 +11,8 @@ An intelligent document processing system that transforms unstructured insurance
 - [Version Control System](#version-control-system)
 - [Configuration](#configuration)
 - [Services](#services)
+- [Azure Tools](#azure-tools)
+- [Logging](#logging)
 - [Development](#development)
 - [Testing](#testing)
 - [Deployment](#deployment)
@@ -100,7 +102,10 @@ claims-ai-processor/
 │
 ├── utils/                           # Utility functions
 │   ├── document_classifier_loader.py # Document classifier loader
-│   └── ...                          # Other utilities
+│   ├── azure_document_intelligence.py # Azure Document Intelligence client
+│   ├── openai_client.py             # Azure OpenAI client
+│   ├── blob_storage.py              # Azure Blob Storage client
+│   └── log_manager.py               # Logging manager with Application Insights
 │
 ├── schemas/                         # Data models and validation
 │   ├── ocr_output.py                # OCR output schema
@@ -205,6 +210,48 @@ Performs cross-document entity recognition and standardization.
 
 Applies business rules and makes final decisions based on extracted data and policy information.
 
+## Azure Tools
+
+The system provides utility classes for interacting with Azure services:
+
+### Azure Document Intelligence ([utils/azure_document_intelligence.py](utils/azure_document_intelligence.py))
+
+Provides functionality for document analysis using Azure Document Intelligence:
+
+- Document text extraction
+- Table and key-value pair extraction
+- Support for various prebuilt models
+
+### Azure OpenAI ([utils/openai_client.py](utils/openai_client.py))
+
+Wrapper for Azure OpenAI services:
+
+- Chat completion API
+- Structured data extraction from documents
+- Document classification
+
+### Azure Blob Storage ([utils/blob_storage.py](utils/blob_storage.py))
+
+Utility for working with Azure Blob Storage:
+
+- Upload and download blobs
+- List blobs in containers
+- Check blob existence
+- Generate SAS URLs for secure access to private blobs
+
+The `generate_sas_url` method allows secure access to blobs without making them publicly accessible. This is especially useful when passing blob URLs to Azure OpenAI for image analysis, as it maintains security while providing temporary access.
+
+## Logging
+
+The system uses [LogManager](utils/log_manager.py) for centralized logging with Azure Application Insights integration:
+
+- Structured logging with custom properties
+- Distributed tracing support
+- Custom event and metric logging
+- Exception tracking
+
+The LogManager provides a singleton instance for consistent logging across the application and sends telemetry data to Azure Application Insights for monitoring and analysis.
+
 ## Development
 
 To set up the development environment:
@@ -224,6 +271,10 @@ To set up the development environment:
    - `AZURE_DOCUMENT_INTELLIGENCE_KEY`
    - `AZURE_OPENAI_ENDPOINT`
    - `AZURE_OPENAI_KEY`
+   - `AZURE_STORAGE_CONNECTION_STRING`
+   - `AZURE_STORAGE_ACCOUNT_NAME`
+   - `AZURE_STORAGE_ACCOUNT_KEY`
+   - `APPLICATIONINSIGHTS_CONNECTION_STRING`
    - `DATABASE_CONNECTION_STRING`
 
 ## Testing

@@ -11,6 +11,8 @@
 - [版本控制系统](#版本控制系统)
 - [配置](#配置)
 - [服务](#服务)
+- [Azure工具](#azure工具)
+- [日志记录](#日志记录)
 - [开发](#开发)
 - [测试](#测试)
 - [部署](#部署)
@@ -100,7 +102,10 @@ claims-ai-processor/
 │
 ├── utils/                           # 工具函数
 │   ├── document_classifier_loader.py # 文档分类器加载器
-│   └── ...                          # 其他工具
+│   ├── azure_document_intelligence.py # Azure文档智能客户端
+│   ├── openai_client.py             # Azure OpenAI客户端
+│   ├── blob_storage.py              # Azure Blob存储客户端
+│   └── log_manager.py               # 日志管理器（集成Application Insights）
 │
 ├── schemas/                         # 数据模型和验证
 │   ├── ocr_output.py                # OCR输出模式
@@ -205,6 +210,48 @@ receipt:
 
 应用业务规则并根据提取的数据和策略信息做出最终决策。
 
+## Azure工具
+
+系统提供了与Azure服务交互的工具类：
+
+### Azure文档智能 ([utils/azure_document_intelligence.py](utils/azure_document_intelligence.py))
+
+提供使用Azure文档智能服务的文档分析功能：
+
+- 文档文本提取
+- 表格和键值对提取
+- 支持各种预构建模型
+
+### Azure OpenAI ([utils/openai_client.py](utils/openai_client.py))
+
+Azure OpenAI服务的封装：
+
+- 聊天完成API
+- 从文档中提取结构化数据
+- 文档分类
+
+### Azure Blob存储 ([utils/blob_storage.py](utils/blob_storage.py))
+
+处理Azure Blob存储的工具：
+
+- 上传和下载blob
+- 列出容器中的blob
+- 检查blob是否存在
+- 生成SAS URL以安全访问私有blob
+
+`generate_sas_url`方法允许在不公开blob的情况下安全访问它们。当需要将blob URL传递给Azure OpenAI进行图像分析时，这特别有用，因为它在提供临时访问权限的同时保持了安全性。
+
+## 日志记录
+
+系统使用[LogManager](utils/log_manager.py)进行集中日志记录，并与Azure Application Insights集成：
+
+- 结构化日志记录，支持自定义属性
+- 分布式追踪支持
+- 自定义事件和指标记录
+- 异常跟踪
+
+LogManager提供单例实例，确保应用程序中的日志记录一致性，并将遥测数据发送到Azure Application Insights以进行监控和分析。
+
 ## 开发
 
 设置开发环境：
@@ -224,6 +271,10 @@ receipt:
    - `AZURE_DOCUMENT_INTELLIGENCE_KEY`
    - `AZURE_OPENAI_ENDPOINT`
    - `AZURE_OPENAI_KEY`
+   - `AZURE_STORAGE_CONNECTION_STRING`
+   - `AZURE_STORAGE_ACCOUNT_NAME`
+   - `AZURE_STORAGE_ACCOUNT_KEY`
+   - `APPLICATIONINSIGHTS_CONNECTION_STRING`
    - `DATABASE_CONNECTION_STRING`
 
 ## 测试
